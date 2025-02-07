@@ -1,7 +1,6 @@
 import kaplay from "kaplay";
 
-// 1. Set the parameters to make use of width and height
-// 1. Add a UI element for carried boxes
+
 // 2. Add the wall that the user interacts with
 // - Make the wall different colours when you get close to it
 
@@ -14,7 +13,7 @@ k.loadSprite("bean", "sprites/bean.png");
 k.scene("gameLevel", () => {
     const player = k.add([k.pos(width() / 4, height() / 2 - 100), k.sprite("bean"), area(), body(), anchor("center")])
     const carryingArea = k.add([
-        k.pos(width()/10,height() / 2), 
+        k.pos(width() / 10, height() / 2), 
         rect(width() / 5, height()),
         area(),
         body({isStatic: true}),
@@ -23,25 +22,11 @@ k.scene("gameLevel", () => {
     ])
 
     function createBox(boxColor, boxSize, xLocation, yLocation) {
-        var red = 100
-        var green = 100
-        var blue = 100
-        if (boxColor === "red") {
-            red = 200
-        } else if (boxColor === "green") {
-            green = 200
-        } else if (boxColor === "blue") {
-            blue = 200
-        } else {
-            red = 0
-            blue = 0
-            green = 0
-        }
         return [
             k.pos(xLocation, yLocation),
             rect(boxSize,boxSize), area(),
             "box",
-            color(red, green, blue),
+            color(boxColor),
             outline(2),
             body({isStatic: true}),
             anchor("center")
@@ -56,11 +41,11 @@ k.scene("gameLevel", () => {
         const XLOC = width() / 4 + BOXSIZE * (index % 3)
         const YLOC = height() / 2 + BOXSIZE * (Math.floor(index / 3))
         if (index % 3 == 0) {
-            objectArray[index] = k.add(createBox("red", BOXSIZE, XLOC, YLOC))
+            objectArray[index] = k.add(createBox(rgb(200,100,100), BOXSIZE, XLOC, YLOC))
         } else if (index % 3 == 1) {
-            objectArray[index] = k.add(createBox("green", BOXSIZE, XLOC, YLOC))
+            objectArray[index] = k.add(createBox(rgb(100,200,100), BOXSIZE, XLOC, YLOC))
         } else {
-            objectArray[index] = k.add(createBox("blue", BOXSIZE, XLOC, YLOC))
+            objectArray[index] = k.add(createBox(rgb(100,100,200), BOXSIZE, XLOC, YLOC))
         }
         // objectTextArray[index] = k.add([k.pos(width() / 4 + BOXSIZE * (index % 3), height() / 2 + BOXSIZE * (Math.floor(index / 3))), text(index + 1), color(0,0,0), outline(2), anchor("center")])
         objectArray[index].add([k.pos(0,0), text(index + 1), color(0,0,0), outline(2), anchor("center")])
@@ -128,12 +113,34 @@ k.scene("gameLevel", () => {
         onKeyRelease(boxNumber, () => {
             if (player.isColliding(objectArray[index])) {
                 destroy(objectArray[index])
-                carryingArea.add(createBox("red", BOXSIZE * 2, 0, height() / 4))
+                carryingArea.add(createBox(objectArray[index].color, BOXSIZE * 2, 0, height() / 4 - carryingArea.get("*").length * 50))
                 // destroy(objectTextArray[index])
-                player.add([rect(32,32), pos(-32, 10), color(255,255,255)])
+                // player.add([rect(32,32), pos(-32, 10), color(255,255,255)])
             }
         })
     }
+
+    onKeyRelease("space", () => {
+        var carriedBoxes = carryingArea.get("*")
+        if (carriedBoxes.length > 0) {
+            const lastBox = carriedBoxes[carriedBoxes.length - 1]
+            k.add(createBox(lastBox.color, BOXSIZE, player.pos.x + BOXSIZE, player.pos.y))
+            destroy(lastBox)
+            console.log(carryingArea.get("*").length)
+        }
+    })
+    // Timer
+    // var time = 0
+    // const title = k.add([
+    //     text(time),
+    //     pos(600,200)
+    // ])
+    // const startTime = Date.now()
+    // onUpdate(() => {
+    //     time = (Date.now() - startTime) / 1000  
+    //     title.text = time
+    // })
+
 })
 
 k.scene("mainMenu", () => {
