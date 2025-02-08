@@ -3,15 +3,26 @@ import kaplay from "kaplay";
 
 // 2. Add the wall that the user interacts with
 // - Make the wall different colours when you get close to it
+// - Add label for carrying area
+// - Make the boxes respawn
 
-const k = kaplay();
+const k = kaplay({
+    background: [250,250,250]
+});
 const BOXSIZE = 50;
 
 k.loadRoot("./"); // A good idea for Itch.io publishing later
 k.loadSprite("bean", "sprites/bean.png");
 
 k.scene("gameLevel", () => {
-    const player = k.add([k.pos(width() / 4, height() / 2 - 100), k.sprite("bean"), area(), body(), anchor("center")])
+    const player = k.add([
+        k.pos(width() / 4, height() / 2 - 100),
+        k.sprite("bean"),
+        area(), 
+        body(),
+        anchor("center"),
+        "player"
+    ])
     const carryingArea = k.add([
         k.pos(width() / 10, height() / 2), 
         rect(width() / 5, height()),
@@ -20,6 +31,33 @@ k.scene("gameLevel", () => {
         anchor("center"),
         color(100,100,100)
     ])
+    const shelfArea = k.add([
+        k.pos(width() * 0.6, 0),
+        rect(width() / 5, height()),
+        area(),
+        body({isStatic: true})
+    ])
+
+    // Set up walls
+    var colours = [rgb(200,100,100), rgb(100,200,100), rgb(100,100,200)]
+
+    var score = 0
+    
+    function createWallSections(colours) {
+        for (let i = 0; i < colours.length; i++) {
+            shelfArea.add([
+                k.pos(0, i * height() / colours.length),
+                rect(width() / 5, height() / colours.length),
+                color(colours[i]),
+                area(),
+                body({isStatic: true}),
+                "shelf",
+                String(i)
+            ])
+        }
+    }
+
+    createWallSections(colours)
 
     function createBox(boxColor, boxSize, xLocation, yLocation) {
         return [
@@ -47,7 +85,6 @@ k.scene("gameLevel", () => {
         } else {
             objectArray[index] = k.add(createBox(rgb(100,100,200), BOXSIZE, XLOC, YLOC))
         }
-        // objectTextArray[index] = k.add([k.pos(width() / 4 + BOXSIZE * (index % 3), height() / 2 + BOXSIZE * (Math.floor(index / 3))), text(index + 1), color(0,0,0), outline(2), anchor("center")])
         objectArray[index].add([k.pos(0,0), text(index + 1), color(0,0,0), outline(2), anchor("center")])
     }
 
@@ -123,12 +160,27 @@ k.scene("gameLevel", () => {
     onKeyRelease("space", () => {
         var carriedBoxes = carryingArea.get("*")
         if (carriedBoxes.length > 0) {
-            const lastBox = carriedBoxes[carriedBoxes.length - 1]
-            k.add(createBox(lastBox.color, BOXSIZE, player.pos.x + BOXSIZE, player.pos.y))
-            destroy(lastBox)
-            console.log(carryingArea.get("*").length)
+            var shelves = shelfArea.get("*")
+            var lastBox = carriedBoxes[carriedBoxes.length - 1]
+            for (let i = 0; i < shelves.length; i++) {
+                if (shelves[i].color.eq(lastBox.color) && player.isColliding(shelves[i])) {
+                    destroy(lastBox)
+                    score++
+                }
+            }
         }
     })
+
+    // onKeyRelease("space", () => {
+    //     var carriedBoxes = carryingArea.get("*")
+    //     if (carriedBoxes.length > 0) {
+    //         const lastBox = carriedBoxes[carriedBoxes.length - 1]
+    //         k.add(createBox(lastBox.color, BOXSIZE, player.pos.x + BOXSIZE + 6, player.pos.y))
+    //         destroy(lastBox)
+    //         console.log(carryingArea.get("*").length)
+    //     }
+    // })
+
     // Timer
     // var time = 0
     // const title = k.add([
@@ -140,6 +192,26 @@ k.scene("gameLevel", () => {
     //     time = (Date.now() - startTime) / 1000  
     //     title.text = time
     // })
+
+    const scoreLabel = k.add([
+        text(score),
+        pos(600,200),
+        color(rgb(0,0,0))
+    ])
+
+    onUpdate(() => {
+        scoreLabel.text = score;
+
+        var shelves = shelfArea.get("*")
+        for (let i = 0; i < shelves.length; i++) {
+            if (player.isColliding(shelves[i])) {
+                // console.log(shelves[i].tags)
+                shelves[i].use(color(colours[Number(shelves[i].tags[2])]))
+            } else if (shelves[i].color != rgb(100,100,100)) {
+                shelves[i].use(color(rgb(100,100,100)))
+            }
+        }
+    })
 
 })
 
